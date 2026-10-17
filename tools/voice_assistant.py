@@ -33,35 +33,55 @@ def init_tts():
 
 
 def split_text_into_sentences(text: str) -> list:
-    """Умное дробление текста на законченные предложения для Silero TTS"""
+    """Умное дробление текста на законченные предложения для Silero TTS с поддержкой списков"""
+    if not text:
+        return []
+
     # 1. Очищаем от Markdown и системных маркеров документов
     text = re.sub(r'\[.*?\]', '', text)  # Удаляем картинки [IMAGE: ...]
     text = text.replace('#', '')  # Удаляем заголовки ##
     text = text.replace('*', '')  # Удаляем жирный/курсивный шрифт **
     text = text.replace('`', '')  # Удаляем маркеры кода
-    text = re.sub(r'^-\s+', '', text, flags=re.MULTILINE)  # Удаляем дефисы списков
 
-    # ИСПРАВЛЕНО: Добавлены ?: внутри скобок, чтобы регулярка не возвращала None в split
+    # 2. Красиво преобразуем нумерованные списки (например, "1. " -> "Пункт первый. ")
+    # Чтобы Silero не ломался об одиночные цифры с точками
+    digits_map = {
+        "1": "Пункт первый", "2": "Пункт второй", "3": "Пункт третий",
+        "4": "Пункт четвертый", "5": "Пункт пятый", "6": "Пункт шестой",
+        "7": "Пункт седьмой", "8": "Пункт восьмой", "9": "Пункт девятый"
+    }
+
+    def replace_digit_list(match):
+        digit = match.group(1)
+        return digits_map.get(digit, f"Пункт {digit}") + ". "
+
+    # Ищем конструкции вида "1. ", "2. " в начале строк или после пробелов
+    text = re.sub(r'(?:^|\n)\s*(\d+)\.\s+', replace_digit_list, text)
+
+    # Заменяем обычные маркеры-дефисы списков на красивую вводную паузу
+    text = re.sub(r'^\s*-\s+', 'Также: ', text, flags=re.MULTILINE)
+
+    # 3. Регулярное выражение для деления на предложения
+    # Игнорируем точки внутри сокращений и проверяем, чтобы после точки шла заглавная буква или пробел
     sentence_end = re.compile(r'(?<!\bт\.(?:и)\.)(?<!\bт\.(?:д)\.)(?<!\bисп\.)(?<=[.!?])\s+')
     raw_sentences = sentence_end.split(text)
 
     sentences = []
     for s in raw_sentences:
-        # Проверяем, что s не является None и является строкой
         if s is None:
             continue
 
         s_clean = s.strip()
-        if not s_clean:
+        if not s_clean or len(s_clean) < 2:  # Игнорируем случайные одиночные символы
             continue
 
-        # Заменяем дефисы на длинные тире для лучшей интонации и убираем лишние пробелы
+        # Заменяем дефисы на длинные тире для лучшей интонации
         s_clean = re.sub(r'\s+', ' ', s_clean)
 
-        # Если предложение получилось аномально длинным (редко, но бывает), бьем его по запятым
+        # Если предложение длинное, аккуратно бьем по запятым
         if len(s_clean) > 250:
             parts = re.split(r'(?<=,)\s+', s_clean)
-            sentences.extend([p.strip() for p in parts if p and p.strip()])
+            sentences.extend([p.strip() for p in parts if p and len(p.strip()) > 1])
         else:
             sentences.append(s_clean)
 

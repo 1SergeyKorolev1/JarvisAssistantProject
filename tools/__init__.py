@@ -30,7 +30,7 @@ TOOLS_DEFINITION = [
         'type': 'function',
         'function': {
             'name': 'get_current_time',
-            'description': 'Узнать точное текущее время на компьютере.'
+            'description': 'Узнать точное текущее время и дату на компьютере.'
         }
     },
     {
