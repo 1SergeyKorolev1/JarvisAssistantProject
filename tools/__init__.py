@@ -1,13 +1,16 @@
 # Импортируем чистые функции из наших файлов
 from .system_commands import shutdown_computer, get_current_time
 from .browser_commands import search_internet, create_word_document
+from .audio_hardware import check_audio_devices
+
 
 # Словарь, по которому main.py будет вызывать функции в коде
 AVAILABLE_TOOLS = {
     'shutdown_computer': shutdown_computer,
     'get_current_time': get_current_time,
     'search_internet': search_internet,
-    'create_word_document': create_word_document
+    'create_word_document': create_word_document,
+    'check_audio_devices': check_audio_devices
 }
 
 # Описание функций для модели Qwen 2.5 (14B), чтобы она знала, КОГДА их вызывать
@@ -65,6 +68,17 @@ TOOLS_DEFINITION = [
                 'required': ['topic', 'content', 'file_name']
             }
         }
+    },
+    {
+    "type": "function",
+    "function": {
+        "name": "check_audio_devices",
+        "description": "Проверить статус подключенного аудио-железа компьютера, найти активный микрофон и динамики.",
+        "parameters": {
+            "type": "object",
+            "properties": {}
+        }
+    }
     }
 
 ]
